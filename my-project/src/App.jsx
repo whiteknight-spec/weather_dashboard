@@ -7,10 +7,15 @@ import GlobeViewer from './components/GlobeViewer';
 import WeatherMap from './components/WeatherMap';
 import CurrentWeather from './components/CurrentWeather';
 import HourlyForecast from './components/HourlyForecast';
+import InteractiveHourlyChart from './components/InteractiveHourlyChart';
 import DailyForecast from './components/DailyForecast';
 import MetricsGrid from './components/MetricsGrid';
 import AirQualityCard from './components/AirQualityCard';
+import SunMoonArc from './components/SunMoonArc';
+import LifestyleAdvisor from './components/LifestyleAdvisor';
+import CityCompareModal from './components/CityCompareModal';
 import WeatherNewsFeed from './components/WeatherNewsFeed';
+import { toggleAudioAmbience } from './utils/audioAmbience';
 import {
   searchCities,
   fetchWeatherData,
@@ -247,6 +252,19 @@ export default function App() {
     longitude: 80.2785,
   };
 
+  const [audioEnabled, setAudioEnabled] = useState(false);
+  const [isCompareOpen, setIsCompareOpen] = useState(false);
+  const [mapTab, setMapTab] = useState('map');
+
+  // ── Toggle Web Audio nature soundscape ──────────────────
+  const handleToggleAudio = () => {
+    const next = toggleAudioAmbience(
+      weatherData?.current?.weatherCode || 0,
+      weatherData?.current?.isDay ?? 1,
+    );
+    setAudioEnabled(next);
+  };
+
   // ── Render ──────────────────────────────────────────────
   return (
     <div className="app" data-theme={theme}>
@@ -260,36 +278,67 @@ export default function App() {
       {/* Ambient floating blobs */}
       <div className="app__ambient" aria-hidden="true" />
 
-      {/* Header */}
-      <header className="app__header">
-        <h1 className="app__logo">
-          <span className="app__logo-icon">⛅</span>
-          WeatherScope
-        </h1>
-        <div className="app__header-actions">
+      {/* Apple-style Top Bar */}
+      <header className="apple-header">
+        <div className="apple-header__brand">
+          <span className="apple-header__logo-icon">⛅</span>
+          <span className="apple-header__title">Weather</span>
+        </div>
+        <div className="apple-header__actions">
+          {/* Audio Nature Soundscape Toggle */}
           <button
             type="button"
-            className={`app__action-pill${particlesEnabled ? ' app__action-pill--active' : ''}`}
+            className={`apple-pill-btn${audioEnabled ? ' apple-pill-btn--active' : ''}`}
+            onClick={handleToggleAudio}
+            title={audioEnabled ? 'Mute soothing weather nature soundscape' : 'Listen to soothing procedural weather soundscape'}
+          >
+            {audioEnabled ? '🔊 Sound ON' : '🎧 Sound OFF'}
+          </button>
+
+          {/* Visual Particles Toggle */}
+          <button
+            type="button"
+            className={`apple-pill-btn${particlesEnabled ? ' apple-pill-btn--active' : ''}`}
             onClick={() => setParticlesEnabled((p) => !p)}
             title={particlesEnabled ? 'Turn off atmospheric ambient particles' : 'Turn on atmospheric ambient particles'}
           >
-            {particlesEnabled ? '✨ Ambient ON' : '✨ Ambient OFF'}
+            {particlesEnabled ? '✨ Effects ON' : '✨ Effects OFF'}
           </button>
+
+          {/* Side-by-Side City Comparison Modal Trigger */}
           <button
-            id="unit-toggle"
-            className="app__unit-toggle"
-            onClick={toggleUnits}
-            title={`Switch to ${units === 'celsius' ? 'Fahrenheit' : 'Celsius'}`}
+            type="button"
+            className="apple-pill-btn"
+            onClick={() => setIsCompareOpen(true)}
+            title="Compare this city with any second city side by side"
           >
-            {units === 'celsius' ? '°C' : '°F'}
+            ⚖️ Compare
           </button>
+
+          {/* Temperature Units Toggle */}
+          <div className="apple-segmented-toggle" role="group" aria-label="Temperature Units">
+            <button
+              type="button"
+              className={`apple-seg-btn${units === 'celsius' ? ' apple-seg-btn--active' : ''}`}
+              onClick={() => setUnits('celsius')}
+            >
+              °C
+            </button>
+            <button
+              type="button"
+              className={`apple-seg-btn${units === 'fahrenheit' ? ' apple-seg-btn--active' : ''}`}
+              onClick={() => setUnits('fahrenheit')}
+            >
+              °F
+            </button>
+          </div>
         </div>
       </header>
 
-      {/* Severe Weather Emergency Warning Banner (Top Level) */}
+      {/* Severe Weather Emergency Warning Banner (Apple Style) */}
       <SevereWeatherAlert weatherData={weatherData} />
 
-      {/* Search Bar */}
+      {/* Search Bar (iOS Spotlight Style) */}
       <SearchBar
         onSearch={handleSearch}
         onSelectSuggestion={handleSelectSuggestion}
@@ -307,21 +356,10 @@ export default function App() {
         onSelectLocation={handleSelectSuggestion}
       />
 
-      {/* ── 3D Earth Globe (Left) & Satellite Map (Right) ───── */}
-      <section className="geo-explorer" aria-label="3D Earth and Satellite Map">
-        <div className="geo-explorer__col geo-explorer__col--globe">
-          <GlobeViewer location={activeLocation} weatherData={weatherData} />
-        </div>
-        <div className="geo-explorer__col geo-explorer__col--map">
-          <WeatherMap
-            location={activeLocation}
-            weatherData={weatherData}
-            onSelectCoordinates={handleMapSelectCoordinates}
-            onGeolocate={handleGeolocate}
-            loading={loading}
-          />
-        </div>
-      </section>
+      {/* Apple Centered Hero Weather Display */}
+      {weatherData && !loading && (
+        <CurrentWeather data={weatherData} units={units} />
+      )}
 
       {/* Error Banner */}
       {error && (
@@ -333,17 +371,109 @@ export default function App() {
       {/* Loading skeleton */}
       {loading && <SkeletonLoader />}
 
-      {/* Weather content */}
+      {/* ── Apple Bento Grid Dashboard ── */}
       {weatherData && !loading && (
-        <div className="app__content">
-          <CurrentWeather data={weatherData} units={units} />
-          <HourlyForecast hours={weatherData.hourly} units={units} />
-          <DailyForecast days={weatherData.daily} units={units} />
-          <MetricsGrid current={weatherData.current} />
-          {/* Live Air Quality Index & Health Recommendation Card */}
-          <AirQualityCard aqiData={aqiData} />
-        </div>
+        <main className="apple-dashboard">
+          {/* Left Column: Forecast & Regional News */}
+          <div className="apple-dashboard__col apple-dashboard__col--primary">
+            {/* 24-Hour Interactive Scrubbable Radial Chart */}
+            <InteractiveHourlyChart hours={weatherData.hourly} units={units} />
+
+            {/* 7-Day Forecast with temperature range gradient bars & Today's dot */}
+            <DailyForecast
+              days={weatherData.daily}
+              units={units}
+              currentTemp={weatherData.current?.temperature}
+            />
+
+            {/* Smart Lifestyle, Outfit & Activity Advisor */}
+            <LifestyleAdvisor weatherData={weatherData} aqiData={aqiData} />
+
+            {/* Regional Weather News Feed (Place, District, State, National) */}
+            <WeatherNewsFeed
+              key={`${activeLocation.city}||${activeLocation.district}||${activeLocation.state}||${activeLocation.country}`}
+              location={activeLocation}
+              weatherData={weatherData}
+            />
+          </div>
+
+          {/* Right Column: Geo Explorer, Sun/Moon, Air Quality, Bento Metrics */}
+          <div className="apple-dashboard__col apple-dashboard__col--secondary">
+            {/* Geo Explorer with Apple Segmented Control */}
+            <div className="apple-card geo-card" aria-label="Interactive Maps and Globe">
+              <div className="geo-card__top">
+                <div className="apple-card__header" style={{ marginBottom: 0 }}>
+                  <span className="apple-card__title">
+                    {mapTab === 'map' ? '🗺️ PRECIPITATION & RADAR MAP' : '🌐 3D EARTH GLOBE'}
+                  </span>
+                </div>
+                <div className="apple-segmented-toggle" role="tablist">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={mapTab === 'map'}
+                    className={`apple-seg-btn${mapTab === 'map' ? ' apple-seg-btn--active' : ''}`}
+                    onClick={() => setMapTab('map')}
+                  >
+                    🗺️ Map
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={mapTab === 'globe'}
+                    className={`apple-seg-btn${mapTab === 'globe' ? ' apple-seg-btn--active' : ''}`}
+                    onClick={() => setMapTab('globe')}
+                  >
+                    🌐 3D Globe
+                  </button>
+                </div>
+              </div>
+
+              <div className="geo-card__body">
+                {mapTab === 'map' ? (
+                  <WeatherMap
+                    location={activeLocation}
+                    weatherData={weatherData}
+                    onSelectCoordinates={handleMapSelectCoordinates}
+                    onGeolocate={handleGeolocate}
+                    loading={loading}
+                  />
+                ) : (
+                  <GlobeViewer location={activeLocation} weatherData={weatherData} />
+                )}
+              </div>
+            </div>
+
+            {/* Celestial Sun and Moon Arc Tracker */}
+            <SunMoonArc
+              sunrise={weatherData.sunrise}
+              sunset={weatherData.sunset}
+              isDay={weatherData.current?.isDay}
+            />
+
+            {/* Air Quality Index Card */}
+            <AirQualityCard aqiData={aqiData} />
+
+            {/* Apple Bento 2x4 Weather Details Grid */}
+            <MetricsGrid
+              current={weatherData.current}
+              sunrise={weatherData.sunrise}
+              sunset={weatherData.sunset}
+              units={units}
+            />
+          </div>
+        </main>
       )}
+
+      {/* Side-by-Side City Comparison Modal */}
+      <CityCompareModal
+        currentLocation={activeLocation}
+        currentWeather={weatherData}
+        currentAqi={aqiData}
+        units={units}
+        isOpen={isCompareOpen}
+        onClose={() => setIsCompareOpen(false)}
+      />
 
       {/* Empty state */}
       {!weatherData && !loading && !error && (
@@ -355,18 +485,9 @@ export default function App() {
         </div>
       )}
 
-      {/* News Feed — always visible once location is known */}
-      {!loading && (
-        <WeatherNewsFeed
-          key={`${activeLocation.city}||${activeLocation.district}||${activeLocation.state}||${activeLocation.country}`}
-          location={activeLocation}
-          weatherData={weatherData}
-        />
-      )}
-
       {/* Footer */}
       <footer className="app__footer">
-        Powered by <a href="https://open-meteo.com" target="_blank" rel="noopener noreferrer">Open-Meteo</a> · Built with React
+        Powered by <a href="https://open-meteo.com" target="_blank" rel="noopener noreferrer">Open-Meteo</a> · Apple Weather Design
       </footer>
     </div>
   );

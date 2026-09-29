@@ -30,11 +30,14 @@ export default function HourlyForecast({ hours, units }) {
   const area = `${points[0][0]},${chartH} ${polyline} ${points[points.length - 1][0]},${chartH}`;
 
   return (
-    <section className="hourly" aria-label="Hourly forecast">
-      <h3 className="section-title">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-        24-Hour Forecast
-      </h3>
+    <section className="apple-card hourly-forecast" aria-label="Hourly forecast">
+      <div className="apple-card__header">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.2">
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
+        </svg>
+        <span className="apple-card__title">24-HOUR FORECAST</span>
+      </div>
 
       <div className="hourly__scroll">
         {/* SVG curve behind cards */}

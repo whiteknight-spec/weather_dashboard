@@ -6,75 +6,57 @@ export default function AirQualityCard({ aqiData }) {
   const aqi = aqiData.us_aqi;
   const category = getAqiCategory(aqi);
 
-  // Pollutant thresholds for progress bar percentage
+  // Position of Apple style thumb on 0-300+ scale
+  const thumbPercent = Math.max(0, Math.min(100, (aqi / 300) * 100));
+
   const pollutants = [
-    { label: 'PM2.5', value: aqiData.pm2_5, max: 100, unit: 'μg/m³', desc: 'Fine inhalable particles' },
-    { label: 'PM10',  value: aqiData.pm10,  max: 150, unit: 'μg/m³', desc: 'Coarse dust & pollen' },
-    { label: 'Ozone', value: aqiData.ozone, max: 180, unit: 'μg/m³', desc: 'Ground-level O₃' },
-    { label: 'NO₂',   value: aqiData.nitrogen_dioxide, max: 80, unit: 'μg/m³', desc: 'Nitrogen dioxide' },
+    { label: 'PM2.5', value: aqiData.pm2_5, unit: 'μg/m³', max: 60 },
+    { label: 'PM10',  value: aqiData.pm10,  unit: 'μg/m³', max: 100 },
+    { label: 'Ozone', value: aqiData.ozone, unit: 'μg/m³', max: 120 },
+    { label: 'NO₂',   value: aqiData.nitrogen_dioxide, unit: 'μg/m³', max: 50 },
   ];
 
   return (
-    <section className="aqi-card" aria-label="Air Quality Index">
-      <div className="aqi-card__header">
-        <div className="aqi-card__title-row">
-          <span className="aqi-card__icon">{category.icon}</span>
-          <h3 className="section-title" style={{ margin: 0 }}>Air Quality Index (AQI)</h3>
-        </div>
-        <span
-          className="aqi-card__badge"
-          style={{ color: category.color, background: category.bg, borderColor: category.color }}
-        >
-          {category.level}
-        </span>
+    <section className="apple-card aqi-card" aria-label="Air Quality Index">
+      <div className="apple-card__header">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.2">
+          <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8Z" />
+          <path d="M12 6v6l4 2" />
+        </svg>
+        <span className="apple-card__title">AIR QUALITY</span>
       </div>
 
-      <div className="aqi-card__body">
-        {/* Left: Big AQI Gauge Score */}
-        <div className="aqi-card__hero">
-          <div className="aqi-card__gauge" style={{ '--aqi-color': category.color }}>
-            <span className="aqi-card__number">{aqi != null ? Math.round(aqi) : '--'}</span>
-            <span className="aqi-card__unit">US AQI</span>
-          </div>
-          <div className="aqi-card__advice-box" style={{ borderColor: category.color }}>
-            <span className="aqi-card__advice-title">Health Recommendation</span>
-            <p className="aqi-card__advice-text">{category.advice}</p>
+      <div className="aqi-card__main">
+        <div className="aqi-card__value-row">
+          <span className="aqi-card__aqi-num">{aqi != null ? Math.round(aqi) : '--'}</span>
+          <span className="aqi-card__level" style={{ color: category.color }}>
+            {category.level}
+          </span>
+        </div>
+
+        {/* Apple Weather Continuous Spectrum Bar */}
+        <div className="aqi-card__spectrum-track">
+          <div className="aqi-card__spectrum-bar">
+            <span
+              className="aqi-card__spectrum-thumb"
+              style={{ left: `${thumbPercent}%` }}
+              title={`AQI ${Math.round(aqi)}`}
+            />
           </div>
         </div>
 
-        {/* Right: Key Pollutants breakdown */}
-        <div className="aqi-card__pollutants">
-          <div className="aqi-card__pollutant-title">Primary Atmospheric Pollutants</div>
-          <div className="aqi-card__pollutant-list">
-            {pollutants.map((p) => {
-              const val = p.value != null ? Math.round(p.value) : '--';
-              const pct = p.value != null ? Math.min(100, Math.round((p.value / p.max) * 100)) : 0;
-              return (
-                <div key={p.label} className="aqi-card__pollutant-item">
-                  <div className="aqi-card__pollutant-info">
-                    <span className="aqi-card__pollutant-name">{p.label}</span>
-                    <span className="aqi-card__pollutant-val">
-                      {val} <small>{p.unit}</small>
-                    </span>
-                  </div>
-                  <div className="aqi-card__progress-track">
-                    <div
-                      className="aqi-card__progress-bar"
-                      style={{
-                        width: `${pct}%`,
-                        background:
-                          pct > 70
-                            ? 'linear-gradient(90deg, #f59e0b, #ef4444)'
-                            : pct > 40
-                            ? 'linear-gradient(90deg, #10b981, #f59e0b)'
-                            : '#10b981',
-                      }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+        <p className="aqi-card__advice">{category.advice}</p>
+
+        {/* Mini pollutant pills */}
+        <div className="aqi-card__pollutants-grid">
+          {pollutants.map((p) => (
+            <div key={p.label} className="aqi-card__pollutant-pill">
+              <span className="aqi-card__p-name">{p.label}</span>
+              <span className="aqi-card__p-val">
+                {p.value != null ? Math.round(p.value) : '--'} <small>{p.unit}</small>
+              </span>
+            </div>
+          ))}
         </div>
       </div>
     </section>

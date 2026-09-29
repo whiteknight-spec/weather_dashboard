@@ -2,34 +2,33 @@
    WeatherScope — Component Styles
    ═════════════════════════════════════════════════════════ */
 
-/* ── App Shell & Dynamic Themes ───────────────────────── */
+/* ── App Shell & Dynamic Apple Sky Themes ──────────────── */
 .app {
-  --bg: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-  --amb-1: rgba(108, 99, 255, 0.14);
-  --amb-2: rgba(255, 107, 107, 0.08);
+  --bg: linear-gradient(180deg, #1b3a5b 0%, #294d75 50%, #1e334a 100%);
+  --amb-1: rgba(108, 99, 255, 0.12);
+  --amb-2: rgba(56, 189, 248, 0.08);
 
   position: relative;
   min-height: 100dvh;
   background: var(--bg);
-  background-size: 400% 400%;
-  animation: bgShift 16s ease infinite;
+  background-attachment: fixed;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 2rem 1.25rem 3rem;
-  transition: background 1.2s ease;
+  padding: 1.5rem 1.25rem 3.5rem;
+  transition: background 1.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.app > * { position: relative; z-index: 1; width: 100%; max-width: 640px; }
+.app > * { position: relative; z-index: 1; width: 100%; max-width: 1200px; }
 
-/* Theme overrides */
-.app[data-theme="clear"]   { --bg: linear-gradient(135deg, #1e3c72, #2a5298, #667eea); --amb-1: rgba(255,200,55,0.18); --amb-2: rgba(102,126,234,0.12); }
-.app[data-theme="night"]   { --bg: linear-gradient(135deg, #0a0a1a, #1a1a3e, #0d1b2a); --amb-1: rgba(99,102,241,0.10); --amb-2: rgba(139,92,246,0.08); }
-.app[data-theme="clouds"]  { --bg: linear-gradient(135deg, #2c3e50, #4a6274, #536976); --amb-1: rgba(149,165,182,0.12); --amb-2: rgba(100,120,140,0.08); }
-.app[data-theme="rain"], .app[data-theme="drizzle"] { --bg: linear-gradient(135deg, #0d1b2a, #1b2838, #2c3e50); --amb-1: rgba(52,152,219,0.14); --amb-2: rgba(41,128,185,0.08); }
-.app[data-theme="snow"]    { --bg: linear-gradient(135deg, #2c3e50, #3498db, #5dade2); --amb-1: rgba(255,255,255,0.14); --amb-2: rgba(174,214,241,0.10); }
-.app[data-theme="thunder"] { --bg: linear-gradient(135deg, #1a0a2e, #2d1b69, #44318d); --amb-1: rgba(255,215,0,0.10); --amb-2: rgba(138,43,226,0.08); }
-.app[data-theme="fog"]     { --bg: linear-gradient(135deg, #3c3b3f, #605c3c, #868f96); --amb-1: rgba(200,200,200,0.10); --amb-2: rgba(150,150,150,0.08); }
+/* Dynamic Apple Sky theme palettes */
+.app[data-theme="clear"]   { --bg: linear-gradient(180deg, #1d5ba5 0%, #357ec7 45%, #569fee 100%); --amb-1: rgba(253, 224, 71, 0.15); --amb-2: rgba(96, 165, 250, 0.12); }
+.app[data-theme="night"]   { --bg: linear-gradient(180deg, #090e1a 0%, #111a2f 50%, #192542 100%); --amb-1: rgba(99, 102, 241, 0.08); --amb-2: rgba(139, 92, 246, 0.06); }
+.app[data-theme="clouds"]  { --bg: linear-gradient(180deg, #2c3a4a 0%, #3e4f62 50%, #55677b 100%); --amb-1: rgba(148, 163, 184, 0.10); --amb-2: rgba(100, 116, 139, 0.08); }
+.app[data-theme="rain"], .app[data-theme="drizzle"] { --bg: linear-gradient(180deg, #142232 0%, #1e334c 50%, #29405b 100%); --amb-1: rgba(56, 189, 248, 0.12); --amb-2: rgba(30, 64, 175, 0.08); }
+.app[data-theme="snow"]    { --bg: linear-gradient(180deg, #24384d 0%, #36536e 50%, #4f7190 100%); --amb-1: rgba(255, 255, 255, 0.12); --amb-2: rgba(186, 230, 253, 0.08); }
+.app[data-theme="thunder"] { --bg: linear-gradient(180deg, #180d2d 0%, #29184a 50%, #391f64 100%); --amb-1: rgba(250, 204, 21, 0.12); --amb-2: rgba(168, 85, 247, 0.10); }
+.app[data-theme="fog"]     { --bg: linear-gradient(180deg, #2a333a 0%, #3d4852 50%, #54626d 100%); --amb-1: rgba(203, 213, 225, 0.10); --amb-2: rgba(148, 163, 184, 0.08); }
 
 @keyframes bgShift {
   0%, 100% { background-position: 0% 50%; }
@@ -1555,9 +1554,9 @@
 }
 .favorites-bar__pill--active {
   color: #fff;
-  background: rgba(99, 102, 241, 0.2);
-  border-color: var(--accent);
-  box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.35);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 .favorites-bar__sub {
   font-size: 0.65rem;
@@ -1787,3 +1786,834 @@
   border-radius: 3px;
   transition: width 0.6s var(--ease);
 }
+
+/* ═════════════════════════════════════════════════════════
+   Apple Weather Design Language (SF Pro & Bento System)
+   ═════════════════════════════════════════════════════════ */
+
+/* ── Apple Top Bar ──────────────────────────────────────── */
+.apple-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  width: 100%;
+}
+.apple-header__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+.apple-header__logo-icon {
+  font-size: 1.5rem;
+}
+.apple-header__title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+}
+.apple-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.apple-pill-btn {
+  padding: 0.38rem 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 9999px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.apple-pill-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+.apple-pill-btn--active {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+/* ── Apple Segmented Toggle ────────────────────────────── */
+.apple-segmented-toggle {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 3px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.apple-seg-btn {
+  padding: 0.28rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.65);
+  border-radius: 9999px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+.apple-seg-btn:hover {
+  color: #ffffff;
+}
+.apple-seg-btn--active {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+/* ── Apple Centered Hero ────────────────────────────────── */
+.apple-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin: 0.8rem 0 1.6rem;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.3);
+  width: 100%;
+}
+.apple-hero__location {
+  margin-bottom: 0.2rem;
+}
+.apple-hero__city {
+  font-size: 2.4rem;
+  font-weight: 500;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+.apple-hero__hierarchy {
+  font-size: 0.92rem;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.78);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  margin-top: 0.2rem;
+}
+.apple-hero__district-tag {
+  color: #ffffff;
+  font-weight: 500;
+}
+.apple-hero__temp-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 0.15rem 0;
+}
+.apple-hero__temp-wrap {
+  display: flex;
+  align-items: flex-start;
+}
+.apple-hero__temp {
+  font-size: 5.6rem;
+  font-weight: 200;
+  line-height: 0.95;
+  letter-spacing: -3px;
+  color: #ffffff;
+}
+.apple-hero__degree {
+  font-size: 3.5rem;
+  font-weight: 200;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.9);
+  margin-top: 0.25rem;
+}
+.apple-hero__icon {
+  font-size: 2.8rem;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.25));
+}
+.apple-hero__condition {
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.92);
+  margin: 0 0 0.45rem;
+}
+.apple-hero__hilo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.88);
+  background: rgba(0, 0, 0, 0.16);
+  padding: 0.35rem 1.1rem;
+  border-radius: 9999px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.apple-hero__hilo-dot {
+  color: rgba(255, 255, 255, 0.38);
+}
+
+/* ── Apple Bento Grid Dashboard ────────────────────────── */
+.apple-dashboard {
+  display: grid;
+  grid-template-columns: 1.12fr 0.88fr;
+  gap: 1.4rem;
+  width: 100%;
+  align-items: start;
+  margin-top: 0.5rem;
+}
+@media (max-width: 960px) {
+  .apple-dashboard {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+}
+.apple-dashboard__col {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  width: 100%;
+}
+
+/* ── Apple Frosted Card Material ───────────────────────── */
+.apple-card {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 22px;
+  padding: 1.25rem 1.4rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+.apple-card:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.apple-card__header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: rgba(255, 255, 255, 0.55);
+  margin-bottom: 0.85rem;
+}
+.apple-card__title {
+  font-weight: 600;
+  letter-spacing: 0.07em;
+}
+
+/* ── Apple Daily Forecast Range Bars ───────────────────── */
+.daily-forecast .daily__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+.daily-forecast .daily__row {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.daily-forecast .daily__row:last-child {
+  border-bottom: none;
+}
+.daily-forecast .daily__day {
+  width: 58px;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+}
+.daily-forecast .daily__icon {
+  font-size: 1.25rem;
+  width: 26px;
+  text-align: center;
+}
+.daily-forecast .daily__lo {
+  width: 34px;
+  text-align: right;
+  color: rgba(255, 255, 255, 0.55);
+  font-weight: 500;
+}
+.daily-forecast .daily__bar-track {
+  flex: 1;
+  height: 5px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 9999px;
+  position: relative;
+}
+.daily-forecast .daily__bar {
+  position: absolute;
+  height: 100%;
+  border-radius: 9999px;
+  min-width: 8px;
+}
+.daily-forecast .daily__current-dot {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #ffffff;
+  top: -2px;
+  transform: translateX(-50%);
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.8), 0 0 6px rgba(255, 255, 255, 0.9);
+  z-index: 2;
+}
+.daily-forecast .daily__hi {
+  width: 34px;
+  text-align: left;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* ── Apple Air Quality Slider Card ─────────────────────── */
+.aqi-card__value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin-bottom: 0.4rem;
+}
+.aqi-card__aqi-num {
+  font-size: 2.2rem;
+  font-weight: 600;
+  color: #ffffff;
+  line-height: 1;
+}
+.aqi-card__level {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+.aqi-card__spectrum-track {
+  width: 100%;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 9999px;
+  margin: 0.7rem 0 0.9rem;
+  position: relative;
+}
+.aqi-card__spectrum-bar {
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #10b981 0%, #84cc16 20%, #facc15 40%, #fb923c 60%, #ef4444 80%, #a855f7 100%);
+  position: relative;
+}
+.aqi-card__spectrum-thumb {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ffffff;
+  top: -4px;
+  transform: translateX(-50%);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+  border: 2px solid rgba(0, 0, 0, 0.2);
+}
+.aqi-card__advice {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.84);
+  line-height: 1.45;
+  margin-bottom: 0.9rem;
+}
+.aqi-card__pollutants-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.55rem;
+}
+.aqi-card__pollutant-pill {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 0.4rem 0.7rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.78rem;
+}
+.aqi-card__p-name {
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
+}
+.aqi-card__p-val {
+  color: #ffffff;
+  font-weight: 600;
+}
+.aqi-card__p-val small {
+  font-size: 0.66rem;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+/* ── Apple Bento Grid Detail Cards ─────────────────────── */
+.apple-bento-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  width: 100%;
+}
+@media (max-width: 480px) {
+  .apple-bento-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.bento-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 140px;
+  padding: 1.1rem 1.15rem;
+}
+.bento-card__icon {
+  font-size: 0.95rem;
+}
+.bento-card__val-row {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin: 0.25rem 0;
+}
+.bento-card__val {
+  font-size: 1.9rem;
+  font-weight: 500;
+  color: #ffffff;
+  line-height: 1.1;
+}
+.bento-card__unit {
+  font-size: 0.95rem;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.65);
+}
+.bento-card__level {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.92);
+  margin-bottom: 0.25rem;
+}
+.bento-card__desc {
+  font-size: 0.76rem;
+  color: rgba(255, 255, 255, 0.65);
+  line-height: 1.35;
+  margin: 0;
+}
+
+/* ── Apple Geo Explorer Card ────────────────────────────── */
+.geo-card {
+  display: flex;
+  flex-direction: column;
+  padding: 1.15rem 1.25rem;
+}
+.geo-card__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.85rem;
+}
+.geo-card__body {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  height: 340px;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.geo-card__body .weather-map {
+  border-radius: 0;
+  border: none;
+  height: 100% !important;
+}
+.geo-card__body .weather-map__container {
+  height: 100% !important;
+  min-height: 100% !important;
+}
+.geo-card__body .globe-viewer {
+  border-radius: 0;
+  border: none;
+  height: 100% !important;
+}
+
+/* ── 24-Hour Interactive Chart Card ─────────────────────── */
+.hourly-chart-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+.hourly-chart__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.hourly-chart__inspector {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(0, 0, 0, 0.22);
+  padding: 0.5rem 0.85rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.inspector__time {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+  color: #ffffff;
+  font-size: 0.88rem;
+}
+.inspector__icon {
+  font-size: 1.15rem;
+}
+.inspector__metrics {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.inspector__pill {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.hourly-chart__canvas-wrap {
+  position: relative;
+  width: 100%;
+  cursor: crosshair;
+}
+.hourly-chart__svg {
+  width: 100%;
+  height: 150px;
+  display: block;
+}
+.hourly-chart__ticks {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.4rem;
+  padding: 0 0.5rem;
+}
+.hourly-chart__tick {
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* ── Celestial Sun & Moon Arc ───────────────────────────── */
+.sun-moon-card {
+  display: flex;
+  flex-direction: column;
+}
+.sun-moon__body {
+  display: grid;
+  grid-template-columns: 1.35fr 0.65fr;
+  gap: 1.25rem;
+  align-items: center;
+}
+@media (max-width: 540px) {
+  .sun-moon__body {
+    grid-template-columns: 1fr;
+  }
+}
+.sun-arc__container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.sun-arc__svg {
+  width: 100%;
+  max-width: 240px;
+  height: auto;
+  overflow: visible;
+}
+.sun-arc__times {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 220px;
+  margin-top: 0.2rem;
+}
+.sun-time {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.sun-time__label {
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 500;
+}
+.sun-time__val {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+.sun-arc__countdown {
+  font-size: 0.78rem;
+  color: #facc15;
+  font-weight: 500;
+  margin: 0.5rem 0 0;
+  text-align: center;
+}
+.moon-phase__widget {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1rem 0.75rem;
+}
+.moon-phase__icon-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #2a3547, #111827);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.6rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+.moon-phase__emoji {
+  font-size: 2rem;
+}
+.moon-phase__name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #ffffff;
+  display: block;
+}
+.moon-phase__illum {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 0.2rem;
+  display: block;
+}
+
+/* ── Smart Lifestyle & Activity Advisor ─────────────────── */
+.lifestyle-card {
+  display: flex;
+  flex-direction: column;
+}
+.lifestyle__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+.lifestyle__item {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 0.85rem 0.95rem;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+.lifestyle__item:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+.lifestyle__icon {
+  font-size: 1.6rem;
+  flex-shrink: 0;
+  line-height: 1;
+  margin-top: 0.1rem;
+}
+.lifestyle__content {
+  display: flex;
+  flex-direction: column;
+}
+.lifestyle__tag {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.45);
+  text-transform: uppercase;
+}
+.lifestyle__status {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0.15rem 0 0.2rem;
+}
+.lifestyle__desc {
+  font-size: 0.74rem;
+  color: rgba(255, 255, 255, 0.68);
+  line-height: 1.35;
+  margin: 0;
+}
+
+/* ── Side-by-Side City Comparison Modal ─────────────────── */
+.compare-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  animation: fadeIn 0.25s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.compare-modal {
+  width: 100%;
+  max-width: 680px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: rgba(18, 28, 45, 0.92) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6) !important;
+}
+.compare-modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+.compare-modal__close {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.compare-modal__close:hover {
+  background: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+}
+.compare-search-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+.compare-search-input {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 9999px;
+  padding: 0.6rem 1rem;
+  font-size: 0.88rem;
+  color: #ffffff;
+  outline: none;
+}
+.compare-search-input:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+}
+.compare-error {
+  color: #ef4444;
+  font-size: 0.82rem;
+  margin-bottom: 0.75rem;
+}
+.compare-grid {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+@media (max-width: 580px) {
+  .compare-grid {
+    grid-template-columns: 1fr;
+  }
+  .compare-divider {
+    display: none;
+  }
+}
+.compare-divider {
+  width: 1px;
+  height: 100%;
+  min-height: 220px;
+  background: rgba(255, 255, 255, 0.1);
+}
+.compare-col {
+  display: flex;
+  flex-direction: column;
+}
+.compare-col__badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #38bdf8;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.2rem;
+}
+.compare-col__badge--target {
+  color: #a78bfa;
+}
+.compare-col__title {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0;
+}
+.compare-col__country {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 0.85rem;
+}
+.compare-col__stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 14px;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.compare-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.7);
+  padding: 0.25rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.compare-stat-row:last-child {
+  border-bottom: none;
+}
+.compare-stat-row strong {
+  color: #ffffff;
+  font-weight: 600;
+}
+.compare-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1rem;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.85rem;
+}
+.compare-empty span {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  opacity: 0.6;
+}
+
+
