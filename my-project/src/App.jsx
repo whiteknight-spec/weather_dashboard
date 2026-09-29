@@ -1,146 +1,314 @@
-import { useState } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import SearchBar from './components/SearchBar';
+import GlobeViewer from './components/GlobeViewer';
+import WeatherMap from './components/WeatherMap';
+import CurrentWeather from './components/CurrentWeather';
+import HourlyForecast from './components/HourlyForecast';
+import DailyForecast from './components/DailyForecast';
+import MetricsGrid from './components/MetricsGrid';
+import {
+  searchCities,
+  fetchWeatherData,
+  reverseGeocode,
+  processWeatherData,
+  getWeatherTheme,
+} from './utils/weather';
 import './App.css';
 
-/**
- * Geocode a city name via the Open-Meteo Geocoding API.
- * Returns the first matching result or null.
- */
-async function geocodeCity(cityName) {
-  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
-    cityName
-  )}&count=1&language=en&format=json`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('Geocoding request failed');
-  const data = await res.json();
-  if (!data.results || data.results.length === 0) return null;
-  return data.results[0];
+// ── Skeleton loader ────────────────────────────────────────
+function SkeletonLoader() {
+  return (
+    <div className="skeleton" aria-busy="true" aria-label="Loading weather data">
+      <div className="skeleton__hero">
+        <div className="skeleton__line skeleton__line--xl" />
+        <div className="skeleton__line skeleton__line--md" />
+        <div className="skeleton__line skeleton__line--lg" />
+      </div>
+      <div className="skeleton__strip">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div className="skeleton__card" key={i} />
+        ))}
+      </div>
+      <div className="skeleton__rows">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div className="skeleton__row" key={i} />
+        ))}
+      </div>
+    </div>
+  );
 }
 
-/**
- * Fetch current weather for given coordinates from Open-Meteo.
- */
-async function fetchWeather(lat, lon) {
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('Weather request failed');
-  return res.json();
-}
-
-function App() {
-  const [query, setQuery] = useState('');
+// ── Main App ───────────────────────────────────────────────
+export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [weather, setWeather] = useState(null);
+  const [weatherData, setWeatherData] = useState(null);
+  const [theme, setTheme] = useState('default');
+  const [units, setUnits] = useState('celsius');
+  const [recentSearches, setRecentSearches] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('ws_recent') || '[]');
+    } catch {
+      return [];
+    }
+  });
 
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    const trimmed = query.trim();
-    if (!trimmed) return;
+  // ── Persist recent searches (with rich metadata) ─────────
+  const addRecent = useCallback((location) => {
+    setRecentSearches((prev) => {
+      const item =
+        typeof location === 'string'
+          ? { name: location, country: '', country_code: '' }
+          : {
+              name: location.name,
+              country: location.country || '',
+              admin1: location.admin1 || '',
+              country_code: location.country_code || '',
+              latitude: location.latitude,
+              longitude: location.longitude,
+            };
+      const filtered = prev.filter((s) => {
+        const sName = typeof s === 'string' ? s : s.name;
+        return sName?.toLowerCase() !== item.name?.toLowerCase();
+      });
+      const next = [item, ...filtered].slice(0, 6);
+      localStorage.setItem('ws_recent', JSON.stringify(next));
+      return next;
+    });
+  }, []);
 
+  const handleRemoveRecent = useCallback((nameToRemove) => {
+    setRecentSearches((prev) => {
+      const next = prev.filter((s) => {
+        const sName = typeof s === 'string' ? s : s.name;
+        return sName?.toLowerCase() !== nameToRemove?.toLowerCase();
+      });
+      localStorage.setItem('ws_recent', JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  const handleClearRecent = useCallback(() => {
+    localStorage.removeItem('ws_recent');
+    setRecentSearches([]);
+  }, []);
+
+  // ── Fetch & process helper ──────────────────────────────
+  const loadWeather = useCallback(
+    async (location) => {
+      const api = await fetchWeatherData(location.latitude, location.longitude);
+      const processed = processWeatherData(api, location);
+      setWeatherData(processed);
+      setTheme(
+        getWeatherTheme(api.current_weather.weathercode, api.current_weather.is_day),
+      );
+      addRecent(location);
+    },
+    [addRecent],
+  );
+
+  // ── Search by text ──────────────────────────────────────
+  const handleSearch = useCallback(
+    async (query) => {
+      setLoading(true);
+      setError('');
+      setWeatherData(null);
+      try {
+        const results = await searchCities(query);
+        if (!results.length) {
+          setError(`City "${query}" not found. Please check spelling or try a nearby city.`);
+          setLoading(false);
+          return;
+        }
+        await loadWeather(results[0]);
+      } catch {
+        setError('Something went wrong. Please check your connection and try again.');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [loadWeather],
+  );
+
+  // ── Select from autocomplete / quick pick ─────────────────
+  const handleSelectSuggestion = useCallback(
+    async (suggestion) => {
+      if (suggestion.latitude != null && suggestion.longitude != null) {
+        setLoading(true);
+        setError('');
+        setWeatherData(null);
+        try {
+          await loadWeather(suggestion);
+        } catch {
+          setError('Failed to fetch weather. Please try again.');
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        handleSearch(suggestion.name || suggestion);
+      }
+    },
+    [loadWeather, handleSearch],
+  );
+
+  // ── Geolocation ─────────────────────────────────────────
+  const handleGeolocate = useCallback(() => {
+    if (!navigator.geolocation) {
+      setError('Geolocation is not supported by your browser.');
+      return;
+    }
     setLoading(true);
     setError('');
-    setWeather(null);
+    setWeatherData(null);
 
-    try {
-      const geo = await geocodeCity(trimmed);
-      if (!geo) {
-        setError(`City "${trimmed}" not found. Please try another name.`);
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords }) => {
+        try {
+          const location = await reverseGeocode(coords.latitude, coords.longitude);
+          await loadWeather(location);
+        } catch {
+          setError('Failed to get weather for your location.');
+        } finally {
+          setLoading(false);
+        }
+      },
+      () => {
+        setError('Location access was denied.');
         setLoading(false);
-        return;
-      }
+      },
+      { timeout: 10000 },
+    );
+  }, [loadWeather]);
 
-      const data = await fetchWeather(geo.latitude, geo.longitude);
-      setWeather({
-        city: geo.name,
-        country: geo.country ?? '',
-        latitude: geo.latitude,
-        longitude: geo.longitude,
-        temperature: data.current_weather.temperature,
-        windSpeed: data.current_weather.windspeed,
-      });
-    } catch {
-      setError('Something went wrong. Please check your connection and try again.');
-    } finally {
-      setLoading(false);
-    }
+  // ── Select from map coordinates ─────────────────────────
+  const handleMapSelectCoordinates = useCallback(
+    async (lat, lon) => {
+      setLoading(true);
+      setError('');
+      try {
+        const location = await reverseGeocode(lat, lon);
+        await loadWeather(location);
+      } catch {
+        const fallback = {
+          name: `Location (${lat.toFixed(2)}°, ${lon.toFixed(2)}°)`,
+          country: '',
+          latitude: lat,
+          longitude: lon,
+        };
+        await loadWeather(fallback);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [loadWeather],
+  );
+
+  // ── Auto-load default city on mount ─────────────────────
+  useEffect(() => {
+    const initial = recentSearches[0] || {
+      name: 'Chennai',
+      country: 'India',
+      country_code: 'IN',
+      latitude: 13.0878,
+      longitude: 80.2785,
+    };
+    handleSelectSuggestion(initial);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Toggle units ────────────────────────────────────────
+  const toggleUnits = () => setUnits((u) => (u === 'celsius' ? 'fahrenheit' : 'celsius'));
+
+  const activeLocation = weatherData?.location || {
+    city: 'Chennai',
+    country: 'India',
+    latitude: 13.0878,
+    longitude: 80.2785,
   };
 
+  // ── Render ──────────────────────────────────────────────
   return (
-    <main className="dashboard">
-      {/* ── Header ──────────────────────────────────── */}
-      <header className="dashboard__header">
-        <h1 className="dashboard__title">Weather Dashboard</h1>
-        <p className="dashboard__subtitle">
-          Search any city for real-time conditions
-        </p>
+    <div className="app" data-theme={theme}>
+      {/* Ambient floating blobs */}
+      <div className="app__ambient" aria-hidden="true" />
+
+      {/* Header */}
+      <header className="app__header">
+        <h1 className="app__logo">
+          <span className="app__logo-icon">⛅</span>
+          WeatherScope
+        </h1>
+        <button
+          id="unit-toggle"
+          className="app__unit-toggle"
+          onClick={toggleUnits}
+          title={`Switch to ${units === 'celsius' ? 'Fahrenheit' : 'Celsius'}`}
+        >
+          {units === 'celsius' ? '°C' : '°F'}
+        </button>
       </header>
 
-      {/* ── Search ──────────────────────────────────── */}
-      <form className="search-form" onSubmit={handleSearch}>
-        <input
-          id="city-input"
-          className="search-form__input"
-          type="text"
-          placeholder="Enter a city name…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          autoComplete="off"
-        />
-        <button
-          id="search-btn"
-          className="search-form__btn"
-          type="submit"
-          disabled={loading || !query.trim()}
-        >
-          Search
-        </button>
-      </form>
+      {/* Search */}
+      <SearchBar
+        onSearch={handleSearch}
+        onSelectSuggestion={handleSelectSuggestion}
+        onGeolocate={handleGeolocate}
+        recentSearches={recentSearches}
+        onRemoveRecent={handleRemoveRecent}
+        onClearRecent={handleClearRecent}
+        onClearError={() => setError('')}
+        loading={loading}
+      />
 
-      {/* ── Loading ─────────────────────────────────── */}
-      {loading && (
-        <div className="loading" role="status">
-          <div className="loading__spinner" />
-          <p className="loading__text">Fetching weather data…</p>
+      {/* ── 3D Earth Globe (Left) & Satellite Map (Right) ───── */}
+      <section className="geo-explorer" aria-label="3D Earth and Satellite Map">
+        <div className="geo-explorer__col geo-explorer__col--globe">
+          <GlobeViewer location={activeLocation} weatherData={weatherData} />
         </div>
-      )}
+        <div className="geo-explorer__col geo-explorer__col--map">
+          <WeatherMap
+            location={activeLocation}
+            weatherData={weatherData}
+            onSelectCoordinates={handleMapSelectCoordinates}
+            onGeolocate={handleGeolocate}
+            loading={loading}
+          />
+        </div>
+      </section>
 
-      {/* ── Error ───────────────────────────────────── */}
+      {/* Error Banner */}
       {error && (
-        <p id="error-message" className="error" role="alert">
+        <p id="error-message" className="error-banner" role="alert">
           {error}
         </p>
       )}
 
-      {/* ── Weather Card ────────────────────────────── */}
-      {weather && (
-        <section className="weather-card" aria-label="Weather results">
-          <h2 className="weather-card__city">
-            {weather.city}{weather.country ? `, ${weather.country}` : ''}
-          </h2>
-          <p className="weather-card__coords">
-            {weather.latitude.toFixed(2)}°N, {weather.longitude.toFixed(2)}°E
-          </p>
+      {/* Loading skeleton */}
+      {loading && <SkeletonLoader />}
 
-          <div className="weather-card__metrics">
-            <div className="metric">
-              <p className="metric__label">Temperature</p>
-              <p className="metric__value">
-                {weather.temperature}
-                <span className="metric__unit">°C</span>
-              </p>
-            </div>
-            <div className="metric">
-              <p className="metric__label">Wind Speed</p>
-              <p className="metric__value">
-                {weather.windSpeed}
-                <span className="metric__unit"> km/h</span>
-              </p>
-            </div>
-          </div>
-        </section>
+      {/* Weather content */}
+      {weatherData && !loading && (
+        <div className="app__content">
+          <CurrentWeather data={weatherData} units={units} />
+          <HourlyForecast hours={weatherData.hourly} units={units} />
+          <DailyForecast days={weatherData.daily} units={units} />
+          <MetricsGrid current={weatherData.current} />
+        </div>
       )}
-    </main>
+
+      {/* Empty state */}
+      {!weatherData && !loading && !error && (
+        <div className="empty-state">
+          <span className="empty-state__icon">🌍</span>
+          <p className="empty-state__text">
+            Search a city or use your location to see the forecast
+          </p>
+        </div>
+      )}
+
+      {/* Footer */}
+      <footer className="app__footer">
+        Powered by <a href="https://open-meteo.com" target="_blank" rel="noopener noreferrer">Open-Meteo</a> · Built with React
+      </footer>
+    </div>
   );
 }
-
-export default App;
