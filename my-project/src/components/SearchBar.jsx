@@ -333,7 +333,13 @@ export default function SearchBar({
               <ul className="search__dropdown-list">
                 {suggestions.map((city, i) => {
                   const flag = getCountryFlag(city.country_code);
-                  const locationMeta = [city.admin1, city.country].filter(Boolean).join(', ');
+                  const distinctDistrict =
+                    city.district && city.district.toLowerCase() !== city.name.toLowerCase()
+                      ? city.district
+                      : null;
+                  const locationMeta = [distinctDistrict, city.admin1 || city.state, city.country]
+                    .filter(Boolean)
+                    .join(' · ');
                   const coords = formatCoordinates(city.latitude, city.longitude);
                   const pop = formatPopulation(city.population);
 

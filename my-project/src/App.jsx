@@ -1,14 +1,20 @@
 import { useState, useCallback, useEffect } from 'react';
 import SearchBar from './components/SearchBar';
+import FavoritesBar from './components/FavoritesBar';
+import SevereWeatherAlert from './components/SevereWeatherAlert';
+import AtmosphericParticles from './components/AtmosphericParticles';
 import GlobeViewer from './components/GlobeViewer';
 import WeatherMap from './components/WeatherMap';
 import CurrentWeather from './components/CurrentWeather';
 import HourlyForecast from './components/HourlyForecast';
 import DailyForecast from './components/DailyForecast';
 import MetricsGrid from './components/MetricsGrid';
+import AirQualityCard from './components/AirQualityCard';
+import WeatherNewsFeed from './components/WeatherNewsFeed';
 import {
   searchCities,
   fetchWeatherData,
+  fetchAirQuality,
   reverseGeocode,
   processWeatherData,
   getWeatherTheme,
@@ -45,6 +51,8 @@ export default function App() {
   const [weatherData, setWeatherData] = useState(null);
   const [theme, setTheme] = useState('default');
   const [units, setUnits] = useState('celsius');
+  const [aqiData, setAqiData] = useState(null);
+  const [particlesEnabled, setParticlesEnabled] = useState(true);
   const [recentSearches, setRecentSearches] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('ws_recent') || '[]');
@@ -60,9 +68,13 @@ export default function App() {
         typeof location === 'string'
           ? { name: location, country: '', country_code: '' }
           : {
-              name: location.name,
+              name: location.name || location.city || location.place,
+              place: location.place || location.name || location.city,
+              district: location.district || location.admin2 || '',
+              state: location.state || location.admin1 || '',
               country: location.country || '',
-              admin1: location.admin1 || '',
+              admin1: location.admin1 || location.state || '',
+              admin2: location.admin2 || location.district || '',
               country_code: location.country_code || '',
               latitude: location.latitude,
               longitude: location.longitude,
@@ -103,6 +115,11 @@ export default function App() {
         getWeatherTheme(api.current_weather.weathercode, api.current_weather.is_day),
       );
       addRecent(location);
+
+      // Concurrently fetch live air quality data
+      fetchAirQuality(location.latitude, location.longitude).then((aqi) => {
+        setAqiData(aqi);
+      });
     },
     [addRecent],
   );
@@ -220,7 +237,12 @@ export default function App() {
 
   const activeLocation = weatherData?.location || {
     city: 'Chennai',
+    name: 'Chennai',
+    place: 'Chennai',
+    district: 'Chennai',
+    state: 'Tamil Nadu',
     country: 'India',
+    country_code: 'IN',
     latitude: 13.0878,
     longitude: 80.2785,
   };
@@ -228,6 +250,13 @@ export default function App() {
   // ── Render ──────────────────────────────────────────────
   return (
     <div className="app" data-theme={theme}>
+      {/* Interactive Atmospheric Weather Canvas (Rain, Snow, Thunder, Sunbeams) */}
+      <AtmosphericParticles
+        weatherCode={weatherData?.current?.weatherCode}
+        isDay={weatherData?.current?.isDay}
+        enabled={particlesEnabled}
+      />
+
       {/* Ambient floating blobs */}
       <div className="app__ambient" aria-hidden="true" />
 
@@ -237,17 +266,30 @@ export default function App() {
           <span className="app__logo-icon">⛅</span>
           WeatherScope
         </h1>
-        <button
-          id="unit-toggle"
-          className="app__unit-toggle"
-          onClick={toggleUnits}
-          title={`Switch to ${units === 'celsius' ? 'Fahrenheit' : 'Celsius'}`}
-        >
-          {units === 'celsius' ? '°C' : '°F'}
-        </button>
+        <div className="app__header-actions">
+          <button
+            type="button"
+            className={`app__action-pill${particlesEnabled ? ' app__action-pill--active' : ''}`}
+            onClick={() => setParticlesEnabled((p) => !p)}
+            title={particlesEnabled ? 'Turn off atmospheric ambient particles' : 'Turn on atmospheric ambient particles'}
+          >
+            {particlesEnabled ? '✨ Ambient ON' : '✨ Ambient OFF'}
+          </button>
+          <button
+            id="unit-toggle"
+            className="app__unit-toggle"
+            onClick={toggleUnits}
+            title={`Switch to ${units === 'celsius' ? 'Fahrenheit' : 'Celsius'}`}
+          >
+            {units === 'celsius' ? '°C' : '°F'}
+          </button>
+        </div>
       </header>
 
-      {/* Search */}
+      {/* Severe Weather Emergency Warning Banner (Top Level) */}
+      <SevereWeatherAlert weatherData={weatherData} />
+
+      {/* Search Bar */}
       <SearchBar
         onSearch={handleSearch}
         onSelectSuggestion={handleSelectSuggestion}
@@ -257,6 +299,12 @@ export default function App() {
         onClearRecent={handleClearRecent}
         onClearError={() => setError('')}
         loading={loading}
+      />
+
+      {/* Pinned Favorites Quick-Switch Bar */}
+      <FavoritesBar
+        activeLocation={activeLocation}
+        onSelectLocation={handleSelectSuggestion}
       />
 
       {/* ── 3D Earth Globe (Left) & Satellite Map (Right) ───── */}
@@ -292,6 +340,8 @@ export default function App() {
           <HourlyForecast hours={weatherData.hourly} units={units} />
           <DailyForecast days={weatherData.daily} units={units} />
           <MetricsGrid current={weatherData.current} />
+          {/* Live Air Quality Index & Health Recommendation Card */}
+          <AirQualityCard aqiData={aqiData} />
         </div>
       )}
 
@@ -303,6 +353,15 @@ export default function App() {
             Search a city or use your location to see the forecast
           </p>
         </div>
+      )}
+
+      {/* News Feed — always visible once location is known */}
+      {!loading && (
+        <WeatherNewsFeed
+          key={`${activeLocation.city}||${activeLocation.district}||${activeLocation.state}||${activeLocation.country}`}
+          location={activeLocation}
+          weatherData={weatherData}
+        />
       )}
 
       {/* Footer */}

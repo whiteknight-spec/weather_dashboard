@@ -80,14 +80,14 @@ export function formatPopulation(num) {
 
 /** Curated popular cities for quick selection */
 export const POPULAR_CITIES = [
-  { id: 'pop-1', name: 'Chennai', country: 'India', country_code: 'IN', admin1: 'Tamil Nadu', latitude: 13.0878, longitude: 80.2785, timezone: 'Asia/Kolkata' },
-  { id: 'pop-2', name: 'London', country: 'United Kingdom', country_code: 'GB', admin1: 'England', latitude: 51.5085, longitude: -0.1257, timezone: 'Europe/London' },
-  { id: 'pop-3', name: 'New York', country: 'United States', country_code: 'US', admin1: 'New York', latitude: 40.7143, longitude: -74.006, timezone: 'America/New_York' },
-  { id: 'pop-4', name: 'Tokyo', country: 'Japan', country_code: 'JP', admin1: 'Tokyo', latitude: 35.6895, longitude: 139.6917, timezone: 'Asia/Tokyo' },
-  { id: 'pop-5', name: 'Dubai', country: 'United Arab Emirates', country_code: 'AE', admin1: 'Dubai', latitude: 25.0772, longitude: 55.3093, timezone: 'Asia/Dubai' },
-  { id: 'pop-6', name: 'Singapore', country: 'Singapore', country_code: 'SG', admin1: '', latitude: 1.2897, longitude: 103.8501, timezone: 'Asia/Singapore' },
-  { id: 'pop-7', name: 'Paris', country: 'France', country_code: 'FR', admin1: 'Île-de-France', latitude: 48.8534, longitude: 2.3488, timezone: 'Europe/Paris' },
-  { id: 'pop-8', name: 'Sydney', country: 'Australia', country_code: 'AU', admin1: 'New South Wales', latitude: -33.8679, longitude: 151.2073, timezone: 'Australia/Sydney' },
+  { id: 'pop-1', name: 'Chennai', district: 'Chennai', state: 'Tamil Nadu', country: 'India', country_code: 'IN', admin1: 'Tamil Nadu', admin2: 'Chennai', latitude: 13.0878, longitude: 80.2785, timezone: 'Asia/Kolkata' },
+  { id: 'pop-2', name: 'London', district: 'Greater London', state: 'England', country: 'United Kingdom', country_code: 'GB', admin1: 'England', admin2: 'Greater London', latitude: 51.5085, longitude: -0.1257, timezone: 'Europe/London' },
+  { id: 'pop-3', name: 'New York', district: 'New York County', state: 'New York', country: 'United States', country_code: 'US', admin1: 'New York', admin2: 'New York County', latitude: 40.7143, longitude: -74.006, timezone: 'America/New_York' },
+  { id: 'pop-4', name: 'Tokyo', district: 'Tokyo', state: 'Kanto', country: 'Japan', country_code: 'JP', admin1: 'Tokyo', admin2: 'Tokyo', latitude: 35.6895, longitude: 139.6917, timezone: 'Asia/Tokyo' },
+  { id: 'pop-5', name: 'Dubai', district: 'Dubai', state: 'Dubai', country: 'United Arab Emirates', country_code: 'AE', admin1: 'Dubai', admin2: 'Dubai', latitude: 25.0772, longitude: 55.3093, timezone: 'Asia/Dubai' },
+  { id: 'pop-6', name: 'Singapore', district: 'Singapore', state: 'Singapore', country: 'Singapore', country_code: 'SG', admin1: '', admin2: '', latitude: 1.2897, longitude: 103.8501, timezone: 'Asia/Singapore' },
+  { id: 'pop-7', name: 'Paris', district: 'Paris', state: 'Île-de-France', country: 'France', country_code: 'FR', admin1: 'Île-de-France', admin2: 'Paris', latitude: 48.8534, longitude: 2.3488, timezone: 'Europe/Paris' },
+  { id: 'pop-8', name: 'Sydney', district: 'Sydney', state: 'New South Wales', country: 'Australia', country_code: 'AU', admin1: 'New South Wales', admin2: 'Sydney', latitude: -33.8679, longitude: 151.2073, timezone: 'Australia/Sydney' },
 ];
 
 // ── API Functions ─────────────────────────────────────────
@@ -95,16 +95,117 @@ export const POPULAR_CITIES = [
 const GEO_URL  = 'https://geocoding-api.open-meteo.com/v1/search';
 const WEATHER_URL = 'https://api.open-meteo.com/v1/forecast';
 
-/** Search cities by name — returns up to 8 matches, with optional AbortSignal. */
+/** Clean district string by stripping repetitive "district", "county", etc. */
+function cleanDistrict(raw) {
+  if (!raw) return '';
+  return raw
+    .replace(/\s+district$/i, '')
+    .replace(/\s+county$/i, '')
+    .trim();
+}
+
+/** Search cities by name — combines Open-Meteo & Nominatim for global coverage of small villages, districts & cities. */
 export async function searchCities(query, signal) {
   if (!query || query.trim().length < 2) return [];
-  const res = await fetch(
-    `${GEO_URL}?name=${encodeURIComponent(query.trim())}&count=8&language=en&format=json`,
-    { signal },
-  );
-  if (!res.ok) throw new Error('Geocoding request failed');
-  const data = await res.json();
-  return data.results || [];
+  const trimmed = query.trim();
+
+  const [omRes, nomRes] = await Promise.allSettled([
+    fetch(
+      `${GEO_URL}?name=${encodeURIComponent(trimmed)}&count=6&language=en&format=json`,
+      { signal },
+    ).then((r) => (r.ok ? r.json() : null)),
+    fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(trimmed)}&format=json&addressdetails=1&limit=6`,
+      {
+        signal,
+        headers: { 'Accept-Language': 'en', 'User-Agent': 'WeatherScope/1.0' },
+      },
+    ).then((r) => (r.ok ? r.json() : null)),
+  ]);
+
+  const list = [];
+  const seen = new Set();
+
+  const add = (item) => {
+    // Unique key by name + rounded lat/lon to deduplicate
+    const key = `${item.name}-${Math.round(item.latitude * 10)}-${Math.round(item.longitude * 10)}`.toLowerCase();
+    if (!seen.has(key)) {
+      seen.add(key);
+      list.push(item);
+    }
+  };
+
+  // Add Nominatim results (great for villages, taluks, sub-districts like Giror in Mainpuri)
+  if (nomRes.status === 'fulfilled' && Array.isArray(nomRes.value)) {
+    for (const d of nomRes.value) {
+      const a = d.address || {};
+      const place =
+        a.village ||
+        a.town ||
+        a.city ||
+        a.municipality ||
+        a.suburb ||
+        a.hamlet ||
+        d.name;
+      const district = cleanDistrict(
+        a.state_district || a.county || a.district || a.city_district || '',
+      );
+      const state = a.state || a.province || a.region || '';
+      const country = a.country || '';
+      const country_code = (a.country_code || '').toUpperCase();
+      const lat = parseFloat(d.lat);
+      const lon = parseFloat(d.lon);
+
+      if (!isNaN(lat) && !isNaN(lon)) {
+        add({
+          id: `nom-${d.place_id}`,
+          name: place,
+          place,
+          district,
+          admin2: district,
+          state,
+          admin1: state,
+          country,
+          country_code,
+          latitude: lat,
+          longitude: lon,
+        });
+      }
+    }
+  }
+
+  // Add Open-Meteo results
+  if (omRes.status === 'fulfilled' && Array.isArray(omRes.value?.results)) {
+    for (const r of omRes.value.results) {
+      const district = cleanDistrict(r.admin2 || '');
+      add({
+        id: `om-${r.id}`,
+        name: r.name,
+        place: r.name,
+        district,
+        admin2: district,
+        state: r.admin1 || '',
+        admin1: r.admin1 || '',
+        country: r.country || '',
+        country_code: (r.country_code || '').toUpperCase(),
+        latitude: r.latitude,
+        longitude: r.longitude,
+        population: r.population,
+      });
+    }
+  }
+
+  // Rank exact / prefix matches of query at the top
+  const qLower = trimmed.toLowerCase();
+  list.sort((a, b) => {
+    const aName = a.name.toLowerCase();
+    const bName = b.name.toLowerCase();
+    const aScore = aName === qLower ? -2 : aName.startsWith(qLower) ? -1 : 0;
+    const bScore = bName === qLower ? -2 : bName.startsWith(qLower) ? -1 : 0;
+    return aScore - bScore;
+  });
+
+  return list;
 }
 
 /** Fetch comprehensive weather data for a lat/lon pair. */
@@ -125,24 +226,63 @@ export async function fetchWeatherData(lat, lon) {
   return res.json();
 }
 
-/** Reverse-geocode lat/lon to a city name via Nominatim. */
+/** Reverse-geocode lat/lon to a complete administrative hierarchy: Place, District, State, Country. */
 export async function reverseGeocode(lat, lon) {
   const res = await fetch(
-    `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,
-    { headers: { 'Accept-Language': 'en' } },
+    `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1`,
+    {
+      headers: {
+        'Accept-Language': 'en',
+        'User-Agent': 'WeatherScope/1.0',
+      },
+    },
   );
   if (!res.ok) throw new Error('Reverse geocoding failed');
   const d = await res.json();
+  const addr = d.address || {};
+
+  const placeName =
+    addr.village ||
+    addr.town ||
+    addr.city ||
+    addr.municipality ||
+    addr.hamlet ||
+    addr.suburb ||
+    addr.neighbourhood ||
+    addr.locality ||
+    d.name ||
+    'Your Location';
+
+  const district = cleanDistrict(
+    addr.state_district ||
+    addr.county ||
+    addr.district ||
+    addr.city_district ||
+    '',
+  );
+
+  const state =
+    addr.state ||
+    addr.province ||
+    addr.region ||
+    '';
+
+  const country = addr.country || '';
+  const countryCode = (addr.country_code || '').toUpperCase();
+
   return {
-    name:
-      d.address?.city ||
-      d.address?.town ||
-      d.address?.village ||
-      d.address?.state ||
-      'Your Location',
-    country: d.address?.country || '',
-    latitude: lat,
-    longitude: lon,
+    name: placeName,
+    city: placeName,
+    place: placeName,
+    district,
+    admin2: district,
+    state,
+    admin1: state,
+    country,
+    country_code: countryCode,
+    latitude: Number(lat),
+    longitude: Number(lon),
+    displayName: d.display_name || '',
   };
 }
 
@@ -186,10 +326,23 @@ export function processWeatherData(apiData, location) {
     sunset: daily.sunset[i],
   }));
 
+  const placeName = location.place || location.name || location.city || 'Your Location';
+  const district = cleanDistrict(location.district || location.admin2 || '');
+  const state = location.state || location.admin1 || '';
+  const country = location.country || '';
+  const countryCode = (location.country_code || '').toUpperCase();
+
   return {
     location: {
-      city: location.name,
-      country: location.country || '',
+      city: placeName,
+      name: placeName,
+      place: placeName,
+      district,
+      admin2: district,
+      state,
+      admin1: state,
+      country,
+      country_code: countryCode,
       latitude: location.latitude,
       longitude: location.longitude,
     },
@@ -264,3 +417,109 @@ export function convertWind(kmh, units) {
 
 export function tempUnit(u)  { return u === 'celsius' ? '°C' : '°F'; }
 export function windUnit(u)  { return u === 'celsius' ? 'km/h' : 'mph'; }
+
+// ── Air Quality API & Category Helpers ─────────────────────
+const AQI_URL = 'https://air-quality-api.open-meteo.com/v1/air-quality';
+
+export async function fetchAirQuality(lat, lon) {
+  try {
+    const params = new URLSearchParams({
+      latitude: lat,
+      longitude: lon,
+      current: 'us_aqi,pm2_5,pm10,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone',
+    });
+    const res = await fetch(`${AQI_URL}?${params}`, { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) throw new Error('AQI fetch failed');
+    const data = await res.json();
+    return data.current || null;
+  } catch {
+    return null;
+  }
+}
+
+export function getAqiCategory(aqi) {
+  if (aqi == null) {
+    return {
+      level: 'Data Pending',
+      color: '#94a3b8',
+      bg: 'rgba(148, 163, 184, 0.12)',
+      advice: 'Air quality reading is currently calibrating for this coordinate.',
+      icon: '🌫️',
+    };
+  }
+  if (aqi <= 50) {
+    return {
+      level: 'Good',
+      color: '#10b981',
+      bg: 'rgba(16, 185, 129, 0.15)',
+      advice: 'Air quality is satisfactory. Safe for all outdoor activities and exercise.',
+      icon: '🍃',
+    };
+  }
+  if (aqi <= 100) {
+    return {
+      level: 'Moderate',
+      color: '#f59e0b',
+      bg: 'rgba(245, 158, 11, 0.15)',
+      advice: 'Air quality is acceptable. Very sensitive individuals may consider reducing prolonged outdoor exertion.',
+      icon: '🌤️',
+    };
+  }
+  if (aqi <= 150) {
+    return {
+      level: 'Unhealthy for Sensitive Groups',
+      color: '#f97316',
+      bg: 'rgba(249, 115, 22, 0.15)',
+      advice: 'Children, the elderly, and those with respiratory conditions should limit prolonged outdoor activity.',
+      icon: '😷',
+    };
+  }
+  if (aqi <= 200) {
+    return {
+      level: 'Unhealthy',
+      color: '#ef4444',
+      bg: 'rgba(239, 68, 68, 0.15)',
+      advice: 'Everyone may experience health effects. Limit strenuous outdoor workouts and keep windows closed.',
+      icon: '⚠️',
+    };
+  }
+  if (aqi <= 300) {
+    return {
+      level: 'Very Unhealthy',
+      color: '#a855f7',
+      bg: 'rgba(168, 85, 247, 0.15)',
+      advice: 'Health alert: risk of health effects increased for everyone. Consider wearing a protective mask outdoors.',
+      icon: '🚨',
+    };
+  }
+  return {
+    level: 'Hazardous',
+    color: '#e11d48',
+    bg: 'rgba(225, 29, 72, 0.25)',
+    advice: 'Emergency warning: entire population is at high risk. Avoid all physical outdoor activity.',
+    icon: '☣️',
+  };
+}
+
+// ── Live Weather Radar via RainViewer API ─────────────────
+export async function fetchRadarInfo() {
+  try {
+    const res = await fetch('https://api.rainviewer.com/public/weather-maps.json', {
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) throw new Error('Radar API failed');
+    const json = await res.json();
+    const past = json.radar?.past || [];
+    const latest = past[past.length - 1];
+    if (latest && json.host) {
+      return {
+        tileUrl: `${json.host}${latest.path}/256/{z}/{x}/{y}/2/1_1.png`,
+        time: latest.time,
+        allFrames: past.slice(-5).map((f) => `${json.host}${f.path}/256/{z}/{x}/{y}/2/1_1.png`),
+      };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}

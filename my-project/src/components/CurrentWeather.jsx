@@ -19,7 +19,40 @@ export default function CurrentWeather({ data, units }) {
       {/* Left: location + condition */}
       <div className="current__info">
         <h2 className="current__city">{location.city}</h2>
-        <p className="current__country">{location.country}</p>
+
+        {/* Administrative hierarchy: Place, District, State, Country */}
+        <p className="current__hierarchy">
+          {location.district && location.district.toLowerCase() !== location.city.toLowerCase() ? (
+            <>
+              <span className="current__place-type">📍 {location.city} (Place)</span>
+              <span className="current__meta-dot">·</span>
+              <span className="current__district-tag">🏛️ District: <strong>{location.district}</strong></span>
+              {location.state && (
+                <>
+                  <span className="current__meta-dot">·</span>
+                  <span>{location.state}</span>
+                </>
+              )}
+              {location.country && (
+                <>
+                  <span className="current__meta-dot">·</span>
+                  <span>{location.country}</span>
+                </>
+              )}
+            </>
+          ) : (
+            <>
+              {location.state && location.state.toLowerCase() !== location.city.toLowerCase() && (
+                <>
+                  <span>{location.state}</span>
+                  <span className="current__meta-dot">·</span>
+                </>
+              )}
+              <span>{location.country}</span>
+            </>
+          )}
+        </p>
+
         <p className="current__condition">{info.description}</p>
 
         <div className="current__meta">
